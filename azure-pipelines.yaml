@@ -2,7 +2,7 @@ trigger:
 - main
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: self-hosted-terraform-pool
 
 variables:
   terraformVersion: '1.8.5'

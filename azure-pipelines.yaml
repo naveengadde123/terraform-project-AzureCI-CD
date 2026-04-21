@@ -9,9 +9,9 @@ variables:
 
 stages:
 
-- stage: Terraform
+- stage: TerraformValidate
   jobs:
-  - job: TerraformJob
+  - job: TerraformValidateJob
     steps:
 
     - task: TerraformInstaller@1
@@ -24,8 +24,8 @@ stages:
         provider: 'azurerm'
         command: 'init'
         backendServiceArm: 'azure-service-conn'
-        backendAzureRmResourceGroupName: '<your-rg>'
-        backendAzureRmStorageAccountName: '<yourstorage>'
+        backendAzureRmResourceGroupName: 'tf-backend-rg'
+        backendAzureRmStorageAccountName: 'tfbackendstorage12345'   # ✅ FIXED
         backendAzureRmContainerName: 'tfstate'
         backendAzureRmKey: 'terraform.tfstate'
 
@@ -42,9 +42,19 @@ stages:
         command: 'plan'
         environmentServiceNameAzureRM: 'azure-service-conn'
 
-    - task: TerraformTaskV4@4
-      displayName: Terraform Apply
-      inputs:
-        provider: 'azurerm'
-        command: 'apply'
-        environmentServiceNameAzureRM: 'azure-service-conn'
+- stage: TerraformApply
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - deployment: TerraformApplyJob
+    environment: 'production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+
+          - task: TerraformTaskV4@4
+            displayName: Terraform Apply
+            inputs:
+              provider: 'azurerm'
+              command: 'apply'
+              environmentServiceNameAzureRM: 'azure-service-conn'

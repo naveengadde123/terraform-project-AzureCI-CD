@@ -34,20 +34,45 @@ stages:
         terraform version
       displayName: "Terraform Version Check"
 
-    - script: |
-        terraform init \
-          -backend-config="resource_group_name=tf-backend-rg" \
-          -backend-config="storage_account_name=tfbackendstorage12345" \
-          -backend-config="container_name=tfstate" \
-          -backend-config="key=terraform.tfstate"
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'Azure_Service_Connection'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          echo "Azure CLI authenticated"
+          az account show
+      displayName: "Azure Login"
+
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'Azure_Service_Connection'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          terraform init \
+            -backend-config="resource_group_name=tf-backend-rg" \
+            -backend-config="storage_account_name=tfbackendstorage12345" \
+            -backend-config="container_name=tfstate" \
+            -backend-config="key=terraform.tfstate"
       displayName: "Terraform Init"
 
-    - script: |
-        terraform validate
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'Azure_Service_Connection'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          terraform validate
       displayName: "Terraform Validate"
 
-    - script: |
-        terraform plan -out=tfplan
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'Azure_Service_Connection'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          terraform plan -out=tfplan
       displayName: "Terraform Plan"
 
 - stage: TerraformApply
@@ -58,6 +83,14 @@ stages:
   - job: Apply
     steps:
 
-    - script: |
-        terraform apply -auto-approve tfplan
+    - checkout: self
+      fetchDepth: 1
+
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'Azure_Service_Connection'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          terraform apply -auto-approve tfplan
       displayName: "Terraform Apply"

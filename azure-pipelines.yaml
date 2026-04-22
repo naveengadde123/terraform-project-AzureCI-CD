@@ -36,7 +36,7 @@ stages:
     - script: terraform version
       displayName: "Terraform Version Check"
 
-    # 🔐 Authenticated Terraform execution
+    #  Authenticated Terraform execution
     - task: AzureCLI@2
       displayName: "Terraform Init, Validate & Plan"
       inputs:
@@ -54,7 +54,7 @@ stages:
 
           terraform plan -out=tfplan
 
-    # 📦 Publish tfplan artifact
+    # Publish tfplan artifact
     - task: PublishBuildArtifacts@1
       inputs:
         pathToPublish: 'tfplan'
@@ -74,7 +74,7 @@ stages:
 
     - checkout: self
 
-    # 📥 Download tfplan artifact
+    # Download tfplan artifact
     - task: DownloadBuildArtifacts@0
       inputs:
         buildType: 'current'
@@ -83,7 +83,7 @@ stages:
         downloadPath: '$(Pipeline.Workspace)'
       displayName: "Download Terraform Plan"
 
-    # 🔐 Authenticated Apply
+    # Authenticated Apply
     - task: AzureCLI@2
       displayName: "Terraform Apply"
       inputs:

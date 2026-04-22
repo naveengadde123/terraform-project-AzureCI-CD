@@ -9,9 +9,9 @@ variables:
 
 stages:
 
-# -------------------------------
+
 # VALIDATE + PLAN
-# -------------------------------
+
 - stage: TerraformValidate
   displayName: "Terraform Validate Stage"
 

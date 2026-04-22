@@ -36,9 +36,9 @@ stages:
     - script: terraform version
       displayName: "Terraform Version Check"
 
-    #  AUTHENTICATED TERRAFORM EXECUTION
+    # 🔐 Authenticated Terraform execution
     - task: AzureCLI@2
-      displayName: "Terraform Init & Plan"
+      displayName: "Terraform Init, Validate & Plan"
       inputs:
         azureSubscription: 'azure-service-conn'
         scriptType: bash
@@ -54,6 +54,13 @@ stages:
 
           terraform plan -out=tfplan
 
+    # 📦 Publish tfplan artifact
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: 'tfplan'
+        artifactName: 'tfplan'
+      displayName: "Publish Terraform Plan"
+
 # -------------------------------
 # APPLY
 # -------------------------------
@@ -67,6 +74,16 @@ stages:
 
     - checkout: self
 
+    # 📥 Download tfplan artifact
+    - task: DownloadBuildArtifacts@0
+      inputs:
+        buildType: 'current'
+        downloadType: 'single'
+        artifactName: 'tfplan'
+        downloadPath: '$(Pipeline.Workspace)'
+      displayName: "Download Terraform Plan"
+
+    # 🔐 Authenticated Apply
     - task: AzureCLI@2
       displayName: "Terraform Apply"
       inputs:
@@ -74,4 +91,10 @@ stages:
         scriptType: bash
         scriptLocation: inlineScript
         inlineScript: |
-          terraform apply -auto-approve tfplan
+          terraform init \
+            -backend-config="resource_group_name=tf-backend-rg" \
+            -backend-config="storage_account_name=tfbackendstorage12345" \
+            -backend-config="container_name=tfstate" \
+            -backend-config="key=terraform.tfstate"
+
+          terraform apply -auto-approve $(Pipeline.Workspace)/tfplan/tfplan

@@ -9,8 +9,12 @@ variables:
 
 stages:
 
+# -------------------------------
+# VALIDATE + PLAN
+# -------------------------------
 - stage: TerraformValidate
   displayName: "Terraform Validate Stage"
+
   jobs:
   - job: Validate
     steps:
@@ -27,54 +31,32 @@ stages:
           unzip terraform_$(terraformVersion)_linux_amd64.zip
           sudo mv terraform /usr/local/bin/
         fi
-
       displayName: "Install Terraform"
 
-    - script: |
-        terraform version
+    - script: terraform version
       displayName: "Terraform Version Check"
 
+    #  AUTHENTICATED TERRAFORM EXECUTION
     - task: AzureCLI@2
+      displayName: "Terraform Init & Plan"
       inputs:
-        azureSubscription: 'Azure_Service_Connection'
-        scriptType: 'bash'
-        scriptLocation: 'inlineScript'
-        inlineScript: |
-          echo "Azure CLI authenticated"
-          az account show
-      displayName: "Azure Login"
-
-    - task: AzureCLI@2
-      inputs:
-        azureSubscription: 'Azure_Service_Connection'
-        scriptType: 'bash'
-        scriptLocation: 'inlineScript'
+        azureSubscription: 'azure-service-conn'
+        scriptType: bash
+        scriptLocation: inlineScript
         inlineScript: |
           terraform init \
             -backend-config="resource_group_name=tf-backend-rg" \
             -backend-config="storage_account_name=tfbackendstorage12345" \
             -backend-config="container_name=tfstate" \
             -backend-config="key=terraform.tfstate"
-      displayName: "Terraform Init"
 
-    - task: AzureCLI@2
-      inputs:
-        azureSubscription: 'Azure_Service_Connection'
-        scriptType: 'bash'
-        scriptLocation: 'inlineScript'
-        inlineScript: |
           terraform validate
-      displayName: "Terraform Validate"
 
-    - task: AzureCLI@2
-      inputs:
-        azureSubscription: 'Azure_Service_Connection'
-        scriptType: 'bash'
-        scriptLocation: 'inlineScript'
-        inlineScript: |
           terraform plan -out=tfplan
-      displayName: "Terraform Plan"
 
+# -------------------------------
+# APPLY
+# -------------------------------
 - stage: TerraformApply
   displayName: "Terraform Apply Stage"
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
@@ -84,13 +66,12 @@ stages:
     steps:
 
     - checkout: self
-      fetchDepth: 1
 
     - task: AzureCLI@2
+      displayName: "Terraform Apply"
       inputs:
-        azureSubscription: 'Azure_Service_Connection'
-        scriptType: 'bash'
-        scriptLocation: 'inlineScript'
+        azureSubscription: 'azure-service-conn'
+        scriptType: bash
+        scriptLocation: inlineScript
         inlineScript: |
           terraform apply -auto-approve tfplan
-      displayName: "Terraform Apply"
